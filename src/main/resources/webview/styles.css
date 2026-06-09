@@ -1,0 +1,65 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background:#1e1e1e;
+    color:#cccccc;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow:hidden;
+    width:100vw; height:100vh;
+}
+
+#controls {
+    position:fixed; top:10px; left:10px; z-index:100;
+    display:flex; gap:14px; align-items:center;
+    font-size:12px;
+    background:rgba(30,30,30,.9);
+    padding:6px 14px;
+    border-radius:8px;
+    border:1px solid #3c3c3c;
+    backdrop-filter:blur(8px);
+}
+#status { color:#888; }
+#node-count { color:#569cd6; }
+#edge-count { color:#9cdcfe; }
+#circular-warn { color:#f44747; font-weight:600; }
+
+#tooltip {
+    position:fixed;
+    display:none;
+    background:rgba(30,30,30,.95);
+    border:1px solid #555;
+    border-radius:6px;
+    padding:8px 12px;
+    font-size:12px;
+    color:#ccc;
+    z-index:200;
+    pointer-events:none;
+    max-width:400px;
+    backdrop-filter:blur(8px);
+    box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+#tooltip .tooltip-name { font-weight:600; color:#fff; font-size:13px; margin-bottom:4px; }
+#tooltip .tooltip-path { color:#888; font-size:11px; word-break:break-all; }
+#tooltip .tooltip-connections { color:#569cd6; font-size:11px; margin-top:4px; }
+
+#graph-container { width:100vw; height:100vh; }
+
+#zoom-controls {
+    position:fixed;
+    right:12px;
+    top:12px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    z-index:200;
+}
+#zoom-controls button {
+    width:28px; height:28px;
+    background:rgba(40,40,40,.8);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    font-size:18px;
+    cursor:pointer;
+}
+#zoom-controls button:hover { background:rgba(60,60,60,.9); }

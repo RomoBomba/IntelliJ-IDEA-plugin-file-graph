@@ -18,11 +18,9 @@ repositories {
 dependencies {
     intellijPlatform {
         local("/Applications/IntelliJ IDEA CE.app")
-
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
     }
-
     implementation("com.google.code.gson:gson:2.11.0")
 }
 
@@ -31,12 +29,18 @@ intellijPlatform {
         id = "com.filegraph"
         name = "File Graph"
         version = project.version.toString()
-
-        description = "Interactive file dependency graph visualization"
-
+        description = """
+            Интерактивная визуализация зависимостей файлов проекта (Java/Kotlin). 
+            Поддержка циклических зависимостей, плавный зум, подсветка соседей и быстрый переход к файлу.
+        """.trimIndent()
         ideaVersion {
-            sinceBuild = "261"
+            sinceBuild = providers.gradleProperty("pluginSinceBuild")
         }
+    }
+
+    publishing {
+        token = providers.gradleProperty("publishToken")
+        channels = listOf("stable")
     }
 }
 

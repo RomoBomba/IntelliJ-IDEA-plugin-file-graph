@@ -9,6 +9,6 @@ class RefreshGraphAction(
 ) : AnAction("Refresh Graph", "Re-scan project dependencies", AllIcons.Actions.Refresh) {
 
     override fun actionPerformed(e: AnActionEvent) {
-        graphPanel.scanProject()
+        graphPanel.refresh()
     }
 }

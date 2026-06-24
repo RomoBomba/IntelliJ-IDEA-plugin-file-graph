@@ -7,21 +7,39 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div id="controls">
-    <span id="status">⏳ Scanning project...</span>
-    <span id="node-count"></span>
-    <span id="edge-count"></span>
-    <span id="circular-warn"></span>
+<div id="header">
+    <div id="controls">
+        <span id="status">⏳ Scanning project...</span>
+        <span id="node-count"></span>
+        <span id="edge-count"></span>
+        <span id="circular-warn"></span>
+    </div>
+    <div id="search-container">
+        <input type="text" id="search-input" placeholder="Search files..." autocomplete="off">
+        <span id="search-results"></span>
+        <button id="clear-search" title="Clear">×</button>
+    </div>
+    <div id="filter-container">
+        <label><input type="checkbox" id="show-java" checked> .java</label>
+        <label><input type="checkbox" id="show-kt" checked> .kt</label>
+        <label><input type="checkbox" id="show-circular" checked> Circular</label>
+        <label><input type="checkbox" id="show-isolated"> Isolated</label>
+    </div>
+    <div id="zoom-controls">
+        <button id="zoom-in" title="Zoom In">+</button>
+        <button id="zoom-out" title="Zoom Out">−</button>
+        <button id="reset-zoom" title="Fit">⟲</button>
+    </div>
 </div>
 
 <div id="tooltip"></div>
 
 <div id="graph-container"></div>
 
-<div id="zoom-controls">
-    <button id="zoom-in">+</button>
-    <button id="zoom-out">−</button>
-    <button id="reset-zoom">⟲</button>
+<div id="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#61afef"></span> Java</div>
+    <div class="legend-item"><span class="legend-color" style="background:#c678dd"></span> Kotlin</div>
+    <div class="legend-item"><span class="legend-color" style="background:#be5046"></span> Circular</div>
 </div>
 
 <script src="force-graph.min.js"></script>

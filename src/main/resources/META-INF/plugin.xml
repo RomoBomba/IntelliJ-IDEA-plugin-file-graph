@@ -1,13 +1,30 @@
 <idea-plugin>
     <id>com.filegraph</id>
     <name>File Graph</name>
+    <version>1.0.0</version>
     <vendor>Roman Shevtsov</vendor>
 
     <description><![CDATA[
-    Interactive file dependency graph visualization for IntelliJ IDEA.
-    Visualize how your project files are connected to each other.
+        <p>Интерактивный граф файлов проекта (Java/Kotlin).</p>
+        <ul>
+            <li>Подсветка соседей, выделение циклических зависимостей</li>
+            <li>Zoom‑in/zoom‑out колесом, трекпадом и кнопками</li>
+            <li>Двойной клик → открыть файл в редакторе</li>
+            <li>Авто‑обновление при изменении файлов</li>
+        </ul>
     ]]></description>
 
+    <change-notes>
+        <![CDATA[
+        <h3>1.0.0</h3>
+        <ul>
+            <li>Первый публичный релиз</li>
+            <li>Новый цветовой дизайн, плавный зум, кэш ресурсов</li>
+        </ul>
+        ]]>
+    </change-notes>
+
+    <idea-version since-build="261" />
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.java</depends>
     <depends>org.jetbrains.kotlin</depends>
@@ -20,8 +37,7 @@
         <toolWindow
                 id="File Graph"
                 anchor="right"
-                icon="AllIcons.Actions.ModuleDirectory"
-                factoryClass="com.filegraph.toolwindow.GraphToolWindowFactory"
-        />
+                icon="icons/fileGraph.svg"
+                factoryClass="com.filegraph.toolwindow.GraphToolWindowFactory"/>
     </extensions>
 </idea-plugin>

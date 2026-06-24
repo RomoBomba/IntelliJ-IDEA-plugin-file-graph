@@ -2,6 +2,9 @@ let graph = null;
 let currentData = { nodes: [], links: [] };
 let highlightedNodeId = null;
 let neighborIndex = {};
+let searchQuery = '';
+let searchMatches = [];
+let currentMatchIndex = -1;
 
 const EXT_COLORS = {
     'java':   '#61afef',
@@ -28,22 +31,44 @@ function getColor(node) {
     return EXT_COLORS[ext] || '#abb2bf';
 }
 
-/* ---------- neighbor index ---------- */
-function buildNeighborIndex(data) {
-    const map = {};
-    data.links.forEach(l => {
-        const s = typeof l.source === 'object' ? l.source.id : l.source;
-        const t = typeof l.target === 'object' ? l.target.id : l.target;
-        (map[s] ??= new Set()).add(t);
-        (map[t] ??= new Set()).add(s);
+let filterState = {
+    showJava: true,
+    showKt: true,
+    showCircular: true,
+    showIsolated: false
+};
+
+function getFilteredData() {
+    const filteredNodes = currentData.nodes.filter(n => {
+        if (!filterState.showJava && n.extension === 'java') return false;
+        if (!filterState.showKt && (n.extension === 'kt' || n.extension === 'kts')) return false;
+        if (!filterState.showCircular && n.isCircular) return false;
+        if (!filterState.showIsolated && n.connections === 0) return false;
+        return true;
     });
-    return map;
-}
-function updateNeighborIndex() {
-    neighborIndex = buildNeighborIndex(currentData);
+
+    const nodeIds = new Set(filteredNodes.map(n => n.id));
+    const filteredLinks = currentData.links.filter(l => {
+        const src = typeof l.source === 'object' ? l.source.id : l.source;
+        const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+        return nodeIds.has(src) && nodeIds.has(tgt);
+    });
+
+    return { nodes: filteredNodes, links: filteredLinks };
 }
 
-/* ---------- tooltip ---------- */
+function updateNeighborIndex(data) {
+    neighborIndex = {};
+    (data.links || []).forEach(l => {
+        const s = typeof l.source === 'object' ? l.source.id : l.source;
+        const t = typeof l.target === 'object' ? l.target.id : l.target;
+        if (!neighborIndex[s]) neighborIndex[s] = new Set();
+        if (!neighborIndex[t]) neighborIndex[t] = new Set();
+        neighborIndex[s].add(t);
+        neighborIndex[t].add(s);
+    });
+}
+
 const tooltip = document.getElementById('tooltip');
 
 function showTooltip(node, ev) {
@@ -58,64 +83,64 @@ function showTooltip(node, ev) {
     tooltip.style.left = (ev.clientX + 15) + 'px';
     tooltip.style.top = (ev.clientY + 15) + 'px';
 }
+
 function hideTooltip() {
     tooltip.style.display = 'none';
 }
 
-/* ---------- init graph ---------- */
 function initGraph() {
     const container = document.getElementById('graph-container');
+    if (!container) return;
 
     graph = ForceGraph()(container)
         .width(window.innerWidth)
         .height(window.innerHeight)
-
         .nodeId('id')
         .nodeLabel(null)
         .nodeVal(node => 3 + (node.connections || 0) * 1.5)
         .nodeRelSize(4)
-
         .nodeCanvasObject((node, ctx, globalScale) => {
             const isHighlighted = highlightedNodeId === node.id;
             const isNeighbor = highlightedNodeId && neighborIndex[highlightedNodeId]?.has(node.id);
             const isDimmed = highlightedNodeId && !isHighlighted && !isNeighbor;
-
+            const isSearchMatch = searchMatches.includes(node.id);
             const size = 3 + (node.connections || 0) * 1.2;
             const color = getColor(node);
 
             ctx.beginPath();
             ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
             ctx.fillStyle = isDimmed ? 'rgba(80,80,80,0.25)' :
+                isSearchMatch ? '#4ec9b0' :
                 isHighlighted ? '#ffffff' : color;
-            if (isHighlighted) {
-                ctx.shadowColor = color;
+            if (isHighlighted || isSearchMatch) {
+                ctx.shadowColor = isSearchMatch ? '#4ec9b0' : color;
                 ctx.shadowBlur = 15;
             }
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            if (isHighlighted) {
+            if (isHighlighted || isSearchMatch) {
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
 
-            if (globalScale > 1.2 || isHighlighted || isNeighbor) {
+            if (globalScale > 1.2 || isHighlighted || isNeighbor || isSearchMatch) {
                 const label = node.name;
                 const fontSize = Math.max(10 / globalScale, 8);
-                ctx.font = `${fontSize}px system-ui, sans-serif`;
+                ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
                 ctx.fillStyle = isDimmed ? 'rgba(100,100,100,0.3)' :
+                    isSearchMatch ? '#4ec9b0' :
                     isHighlighted ? '#ffffff' : 'rgba(200,200,200,0.85)';
                 ctx.fillText(label, node.x, node.y + size + 2);
             }
         })
-
         .linkSource('source')
         .linkTarget('target')
         .linkColor(link => {
-            if (link.isCircular) return 'rgba(190,80,70,0.6)';
+            if (link.isCircular) return 'rgba(190,80,70,0.8)';
             if (highlightedNodeId) {
                 const s = typeof link.source === 'object' ? link.source.id : link.source;
                 const t = typeof link.target === 'object' ? link.target.id : link.target;
@@ -124,105 +149,179 @@ function initGraph() {
             }
             return 'rgba(255,255,255,0.1)';
         })
-        .linkWidth(l => l.isCircular ? 2 : 0.8)
-        .linkDirectionalArrowLength(4)
+        .linkWidth(l => l.isCircular ? 2.5 : 0.8)
+        .linkDirectionalArrowLength(3)
         .linkDirectionalArrowRelPos(1)
         .linkDirectionalArrowColor(l => l.isCircular ? 'rgba(190,80,70,0.8)' : 'rgba(255,255,255,0.15)')
-
-        .onNodeClick(handleNodeClick)
-        .onNodeHover(handleNodeHover)
-        .onBackgroundClick(() => {
-            highlightedNodeId = null;
-            graph.refresh();
+        .onNodeClick(node => {
+            if (!node) return;
+            if (window.openFileInIDE) window.openFileInIDE(node.path);
         })
-
+        .onNodeHover((node, prevNode) => {
+            document.body.style.cursor = node ? 'pointer' : 'default';
+            if (node) {
+                const rect = document.getElementById('graph-container').getBoundingClientRect();
+                const screen = graph.graph2ScreenCoords(node.x, node.y);
+                showTooltip(node, { clientX: screen.x + rect.left, clientY: screen.y + rect.top });
+            } else hideTooltip();
+        })
         .d3AlphaDecay(0.02)
         .d3VelocityDecay(0.3)
         .warmupTicks(100)
         .cooldownTicks(300)
-
         .backgroundColor('#1e1e1e');
 
-    /* ---- плавный зум колесиком / жестами ---- */
-    graph.onWheel(event => {
-        event.preventDefault();
-        const direction = Math.sign(event.deltaY);
-        const factor = direction < 0 ? 1.15 : 0.85;
-        const newZoom = Math.min(Math.max(graph.zoom() * factor, 0.2), 5);
-        graph.zoom(newZoom, 200);
+    window.addEventListener('resize', () => {
+        if (graph) {
+            graph.width(window.innerWidth).height(window.innerHeight);
+        }
     });
 
-    window.addEventListener('resize', () => {
-        graph.width(window.innerWidth).height(window.innerHeight);
-    });
+    initSearch();
+    initFilters();
 }
 
-/* ---------- двойной клик ---------- */
-let lastClickTime = 0;
-let lastClickedNodeId = null;
-const DOUBLE_CLICK_MS = 300;
+function initSearch() {
+    const input = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search');
 
-function handleNodeClick(node) {
-    if (!node) return;
-    const now = Date.now();
+    input.addEventListener('input', () => {
+        searchQuery = input.value.trim();
+        performSearch();
+    });
 
-    if (lastClickedNodeId === node.id && now - lastClickTime < DOUBLE_CLICK_MS) {
-        if (window.openFileInIDE) window.openFileInIDE(node.path);
-        lastClickTime = 0;
-        lastClickedNodeId = null;
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && searchMatches.length > 0) {
+            navigateSearch(e.shiftKey ? -1 : 1);
+        } else if (e.key === 'Escape') {
+            clearSearch();
+        }
+    });
+
+    clearBtn.addEventListener('click', clearSearch);
+}
+
+function performSearch() {
+    if (!searchQuery) {
+        searchMatches = [];
+        currentMatchIndex = -1;
+        document.getElementById('search-results').textContent = '';
         return;
     }
 
-    highlightedNodeId = (highlightedNodeId === node.id) ? null : node.id;
-    graph.refresh();
+    try {
+        const regex = new RegExp(searchQuery, 'i');
+        searchMatches = currentData.nodes
+            .filter(n => regex.test(n.name) || regex.test(n.path) || regex.test(n.directory))
+            .map(n => n.id);
+    } catch (e) {
+        searchMatches = currentData.nodes
+            .filter(n => n.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(n => n.id);
+    }
 
-    lastClickTime = now;
-    lastClickedNodeId = node.id;
+    currentMatchIndex = searchMatches.length > 0 ? 0 : -1;
+    updateSearchResults();
+    
+    if (graph && currentMatchIndex >= 0) {
+        highlightedNodeId = searchMatches[currentMatchIndex];
+        const node = currentData.nodes.find(n => n.id === highlightedNodeId);
+        if (node && node.x !== undefined) {
+            graph.centerAt(node.x, node.y, 300);
+        }
+    }
 }
 
-/* ---------- hover ---------- */
-function handleNodeHover(node, prevNode) {
-    document.body.style.cursor = node ? 'pointer' : 'default';
-    if (node) {
-        const rect = document.getElementById('graph-container').getBoundingClientRect();
-        const screen = graph.graph2ScreenCoords(node.x, node.y);
-        showTooltip(node, { clientX: screen.x + rect.left, clientY: screen.y + rect.top });
-    } else hideTooltip();
+function updateSearchResults() {
+    const el = document.getElementById('search-results');
+    if (searchMatches.length > 0) {
+        el.textContent = `${currentMatchIndex + 1}/${searchMatches.length}`;
+    } else if (searchQuery) {
+        el.textContent = '0 matches';
+    } else {
+        el.textContent = '';
+    }
 }
 
-/* ---------- bridge API ---------- */
+function navigateSearch(direction) {
+    if (searchMatches.length === 0) return;
+    currentMatchIndex = (currentMatchIndex + direction + searchMatches.length) % searchMatches.length;
+    highlightedNodeId = searchMatches[currentMatchIndex];
+    updateSearchResults();
+    
+    const node = currentData.nodes.find(n => n.id === highlightedNodeId);
+    if (node && node.x !== undefined) {
+        graph.centerAt(node.x, node.y, 300);
+    }
+}
+
+function clearSearch() {
+    searchQuery = '';
+    searchMatches = [];
+    currentMatchIndex = -1;
+    highlightedNodeId = null;
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').textContent = '';
+}
+
+function initFilters() {
+    document.getElementById('show-java').addEventListener('change', e => {
+        filterState.showJava = e.target.checked;
+        applyFilters();
+    });
+    document.getElementById('show-kt').addEventListener('change', e => {
+        filterState.showKt = e.target.checked;
+        applyFilters();
+    });
+    document.getElementById('show-circular').addEventListener('change', e => {
+        filterState.showCircular = e.target.checked;
+        applyFilters();
+    });
+    document.getElementById('show-isolated').addEventListener('change', e => {
+        filterState.showIsolated = e.target.checked;
+        applyFilters();
+    });
+}
+
+function applyFilters() {
+    if (!graph) return;
+    
+    const filteredData = getFilteredData();
+    updateNeighborIndex(filteredData);
+    
+    graph.graphData(filteredData);
+}
+
 window.updateGraph = function (jsonString) {
     try {
-        const data = JSON.parse(jsonString);
+        let data;
+        if (typeof jsonString === 'string') {
+            data = JSON.parse(jsonString);
+        } else {
+            data = jsonString;
+        }
+
+        if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.links)) {
+            throw new Error('Invalid data structure');
+        }
+
         currentData = data;
-        highlightedNodeId = null;
-        updateNeighborIndex();
-        graph.graphData(currentData);
-        updateStatus(currentData);
+        updateNeighborIndex(data);
+
+        if (!graph) {
+            initGraph();
+        }
+
+        const filteredData = getFilteredData();
+        graph.graphData(filteredData);
+        updateStatus(data);
         setTimeout(() => graph.zoomToFit(400, 40), 1500);
+
     } catch (e) {
-        console.error(e);
-        const s = document.getElementById('status');
-        s.textContent = '❌ Error';
-        s.style.color = '#f44747';
+        console.error('Error updating graph:', e);
     }
 };
 
-window.highlightNodeById = function (nodeId) {
-    highlightedNodeId = nodeId;
-    graph.refresh();
-    const n = currentData.nodes.find(v => v.id === nodeId);
-    if (n) {
-        graph.centerAt(n.x, n.y, 500);
-        graph.zoom(3, 500);
-    }
-};
-
-window.onBridgeReady = function () {
-    console.log('Bridge ready');
-};
-
-/* ---------- статус-бар ---------- */
 function updateStatus(data) {
     const status = document.getElementById('status');
     const nodeCnt = document.getElementById('node-count');
@@ -234,22 +333,18 @@ function updateStatus(data) {
     nodeCnt.textContent = `${data.nodes.length} files`;
     edgeCnt.textContent = `${data.links.length} deps`;
 
-    const circCnt = data.links.filter(l => l.isCircular).length;
+    const circCnt = data.nodes.filter(n => n.isCircular).length;
     circ.textContent = circCnt ? `⚠ ${circCnt} circular` : '';
 }
 
-/* ---------- тема ---------- */
-function applyTheme() {
-    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.body.style.background = dark ? '#1e1e1e' : '#ffffff';
+window.onBridgeReady = function () {};
+
+document.getElementById('zoom-in')?.addEventListener('click', () => graph && graph.zoom(graph.zoom() * 1.25, 300));
+document.getElementById('zoom-out')?.addEventListener('click', () => graph && graph.zoom(graph.zoom() * 0.8, 300));
+document.getElementById('reset-zoom')?.addEventListener('click', () => graph && graph.zoomToFit(400, 40));
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGraph);
+} else {
+    initGraph();
 }
-applyTheme();
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
-
-/* ---------- кнопки зума ---------- */
-document.getElementById('zoom-in')?.addEventListener('click', () => graph.zoom(graph.zoom() * 1.25, 300));
-document.getElementById('zoom-out')?.addEventListener('click', () => graph.zoom(graph.zoom() * 0.8, 300));
-document.getElementById('reset-zoom')?.addEventListener('click', () => graph.zoomToFit(400, 40));
-
-/* ---------- старт ---------- */
-document.addEventListener('DOMContentLoaded', initGraph);

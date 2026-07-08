@@ -88,7 +88,7 @@
 ### Через артефакт
 
 1. Скачайте `file-graph-<version>.zip` (актуальная версия: file-graph‑1.0.0):
-- Найти по пути: /file-graph/build/distributions/file-graph-0.0.1.zip
+- Найти по пути: file-graph/revision/file-graph-0.0.1.zip
 2. File → Settings → Plugins → ⚙️ → Install Plugin from Disk…
 3. Выберите `file-graph-<version>.zip`
 4. Подтверждите установку

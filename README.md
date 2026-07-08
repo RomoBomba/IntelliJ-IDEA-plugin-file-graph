@@ -25,21 +25,21 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     IntelliJ IDEA                           │
-│  ┌─────────────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ GraphToolWindow │──│  GraphPanel  │──│  JcefBridge   │  │
-│  │    Factory      │  │              │  │               │  │
-│  └─────────────────┘  └──────┬───────┘  └───────┬───────┘  │
-│                              │                  │          │
-│                     ┌────────▼────────┐         │          │
-│                     │DependencyGraph  │         │          │
-│                     │   Service       │         │          │
-│                     │  (PSI analysis) │         │          │
-│                     └────────┬────────┘         │          │
-│                              │                  │          │
-│                     ┌────────▼────────┐  ┌──────▼──────┐  │
-│                     │  ForceGraph.js  │──│   index.html│  │
-│                     │   (webview)     │  │  (UI + D3)  │  │
-│                     └─────────────────┘  └─────────────┘  │
+│  ┌─────────────────┐  ┌──────────────┐  ┌───────────────┐   │
+│  │ GraphToolWindow │──│  GraphPanel  │──│  JcefBridge   │   │
+│  │    Factory      │  │              │  │               │   │
+│  └─────────────────┘  └──────┬───────┘  └───────┬───────┘   │
+│                              │                  │           │
+│                     ┌────────▼────────┐         │           │
+│                     │ DependencyGraph │         │           │
+│                     │     Service     │         │           │
+│                     │  (PSI analysis) │         │           │
+│                     └────────┬────────┘         │           │
+│                              │                  │           │
+│                     ┌────────▼────────┐  ┌──────▼──────┐    │
+│                     │  ForceGraph.js  │──│  index.html │    │
+│                     │   (webview)     │  │  (UI + D3)  │    │
+│                     └─────────────────┘  └─────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -83,17 +83,17 @@
 
 ## Установка
 
-### Через Marketplace (пока недоступно)
-
-1. Откройте **Settings → Plugins**
-2. Выберите **Marketplace**, введите `File Graph`
-3. Установите и перезапустите IDE
+*Через Marketplace пока недоступно*
 
 ### Через артефакт
 
-1. Скачайте `file-graph-<version>.zip` с GitHub Releases
-2. **Plugins → ⚙️ → Install Plugin from Disk…**
-3. Перезапустите IDE
+1. Скачайте `file-graph-<version>.zip` (актуальная версия: file-graph‑1.0.0):
+- Найти по пути: /file-graph/build/distributions/file-graph-0.0.1.zip
+2. File → Settings → Plugins → ⚙️ → Install Plugin from Disk…
+3. Выберите `file-graph-<version>.zip`
+4. Подтверждите установку
+5. Перезапустите IDE
+6. Находим плагин: View → Tool Windows → File Graph (или используйте быстрый поиск Shift+Shift → «File Graph»).
 
 ---
 
